@@ -45,21 +45,26 @@ jobs:
           context: ./app/api
           push: true
           tags: ghcr.io/${{ github.actor }}/k8s-prod-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: app/api/requirements.txt
 
       - name: Install API dependencies
         run: pip install -r app/api/requirements.txt
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Scan API code with Snyk
-        uses: snyk/actions/python@master
+        run: snyk test --file=app/api/requirements.txt --package-manager=pip --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=app/api/requirements.txt --severity-threshold=high
 
       - name: Scan API image with Snyk
         uses: snyk/actions/docker@master
@@ -90,21 +95,26 @@ jobs:
           context: ./app/worker
           push: true
           tags: ghcr.io/${{ github.actor }}/k8s-prod-worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: app/worker/requirements.txt
 
       - name: Install worker dependencies
         run: pip install -r app/worker/requirements.txt
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Scan worker code with Snyk
-        uses: snyk/actions/python@master
+        run: snyk test --file=app/worker/requirements.txt --package-manager=pip --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=app/worker/requirements.txt --severity-threshold=high
 
       - name: Scan worker image with Snyk
         uses: snyk/actions/docker@master
