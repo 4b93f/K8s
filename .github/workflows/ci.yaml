@@ -3,9 +3,9 @@ name: CI
 on:
   push:
     branches: [feat/github-actions, main]
-    # paths:
-    #   - "app/api/**"
-    #   - "app/worker/**"
+    paths:
+      - "app/api/**"
+      - "app/worker/**"
 
 jobs:
   changes:
@@ -26,7 +26,7 @@ jobs:
 
   build-api:
     needs: changes
-    # if: needs.changes.outputs.api == 'true'
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -79,7 +79,7 @@ jobs:
 
   build-worker:
     needs: changes
-    # if: needs.changes.outputs.worker == 'true'
+    if: needs.changes.outputs.worker == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
