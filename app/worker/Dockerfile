@@ -15,4 +15,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY main.py .
 
+RUN useradd -r -u 1001 appuser
+USER appuser
+
 CMD ["python", "-u", "main.py"]

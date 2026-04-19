@@ -13,4 +13,7 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY main.py .
 
+RUN useradd -r -u 1001 appuser
+USER appuser
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
