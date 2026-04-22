@@ -1,4 +1,4 @@
-# k8s-prod
+# K8s-log-processor
 
 Log processing pipeline built on Kubernetes. Upload a log file or image via the API — a worker picks it up from SQS, parses HTTP metrics (or runs OCR on images), and writes results to S3. Deployed via ArgoCD GitOps, monitored with Prometheus + Grafana.
 
@@ -74,7 +74,7 @@ log-processing/
 - **Async job processing** — upload returns a `job_id` immediately; poll for result via SQS + S3
 - **OCR support** — send images of logs; worker extracts text with Tesseract and parses them
 - **Prometheus metrics** — messages processed/failed, OCR stats, processing duration, HTTP error counts
-- **GitOps with ArgoCD** — push to [k8s-prod-config](https://github.com/4b93f-organization/k8s-prod-config), cluster updates automatically
+- **GitOps with ArgoCD** — push to [K8s-log-processor-config](https://github.com/4b93f-organization/K8s-log-processor-config), cluster updates automatically
 - **Multi-arch Docker builds** — `linux/amd64` + `linux/arm64`
 - **Snyk scanning** — dependency and container image scanning in CI
 - **One-command setup** — `make setup && make monitoring && make infra && make deploy`
@@ -87,12 +87,12 @@ GitHub Actions on every push to `main` (when `app/` files change):
 2. Snyk dependency scan
 3. Snyk container image scan
 
-Kubernetes deployment is handled by ArgoCD via [k8s-prod-config](https://github.com/4b93f-organization/k8s-prod-config) — push to that repo, cluster updates automatically.
+Kubernetes deployment is handled by ArgoCD via [K8s-log-processor-config](https://github.com/4b93f-organization/K8s-log-processor-config) — push to that repo, cluster updates automatically.
 
 ## Repo Structure
 
 ```
-k8s-prod/                          # this repo
+K8s-log-processor/                 # this repo
 ├── app/
 │   ├── api/                       # FastAPI — upload, poll, health
 │   └── worker/                    # SQS consumer, log parser, OCR
@@ -103,13 +103,13 @@ k8s-prod/                          # this repo
 ├── Makefile                       # one-command setup
 └── docs/screenshots/
 
-k8s-prod-config/                   # separate GitOps repo
+K8s-log-processor-config/                   # separate GitOps repo
 ├── argocd/                        # ArgoCD Application manifests
 ├── chart/                         # Helm chart (API + Worker)
 └── grafana/                       # dashboard JSON
 ```
 
-Kubernetes config lives in a separate repo: [k8s-prod-config](https://github.com/4b93f-organization/k8s-prod-config)
+Kubernetes config lives in a separate repo: [K8s-log-processor-config](https://github.com/4b93f-organization/K8s-log-processor-config)
 
 ## Worker Metrics
 

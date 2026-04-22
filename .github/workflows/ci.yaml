@@ -47,7 +47,7 @@ jobs:
         with:
           context: ./app/api
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/k8s-prod-api:latest
+          tags: ghcr.io/${{ github.repository_owner }}/k8s-log-processor-api:latest
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -75,7 +75,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          image: ghcr.io/${{ github.repository_owner }}/k8s-prod-api:latest
+          image: ghcr.io/${{ github.repository_owner }}/k8s-log-processor-api:latest
           args: --file=app/api/Dockerfile --severity-threshold=high
 
   build-worker:
@@ -101,7 +101,7 @@ jobs:
         with:
           context: ./app/worker
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/k8s-prod-worker:latest
+          tags: ghcr.io/${{ github.repository_owner }}/k8s-log-processor-worker:latest
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -129,5 +129,5 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          image: ghcr.io/${{ github.repository_owner }}/k8s-prod-worker:latest
+          image: ghcr.io/${{ github.repository_owner }}/k8s-log-processor-worker:latest
           args: --file=app/worker/Dockerfile --severity-threshold=high
