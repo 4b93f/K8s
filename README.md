@@ -1,6 +1,6 @@
 # k8s-prod
 
-Production-ready log processing system on Kubernetes. Upload log files or images — the worker parses them, extracts HTTP metrics, and stores results in S3. Full observability via Prometheus + Grafana.
+Log processing pipeline built on Kubernetes. Upload a log file or image via the API — a worker picks it up from SQS, parses HTTP metrics (or runs OCR on images), and writes results to S3. Deployed via ArgoCD GitOps, monitored with Prometheus + Grafana.
 
 ## Screenshots
 
