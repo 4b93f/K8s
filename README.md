@@ -50,8 +50,12 @@ flowchart LR
 
 ```
 log-processing/
-  uploads/{job_id}/{filename}        # raw upload (log file or image)
-  results/{job_id}/summary.json      # parsed result written by worker
+├── uploads/
+│   └── {job_id}/
+│       └── {filename}          # raw upload (log file or image)
+└── results/
+    └── {job_id}/
+        └── summary.json        # parsed result written by worker
 ```
 
 `summary.json` example:
@@ -72,7 +76,6 @@ log-processing/
 - **Prometheus metrics** — messages processed/failed, OCR stats, processing duration, HTTP error counts
 - **GitOps with ArgoCD** — push to [k8s-prod-config](https://github.com/4b93f-organization/k8s-prod-config), cluster updates automatically
 - **Multi-arch Docker builds** — `linux/amd64` + `linux/arm64`
-- **Non-root containers** — runs as `appuser` (uid 1001)
 - **Snyk scanning** — dependency and container image scanning in CI
 - **One-command setup** — `make setup && make monitoring && make infra && make deploy`
 
