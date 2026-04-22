@@ -18,31 +18,32 @@ Log processing pipeline built on Kubernetes. Upload a log file or image via the 
 
 ## Architecture
 
-```
-User → POST /upload → API → S3 (raw file) + SQS (job message)
-                               ↓
-                           Worker (polls SQS)
-                               ↓
-                     S3 (results/job_id/summary.json)
-                               ↓
-                     GET /jobs/{job_id} → result
-```
+```mermaid
+flowchart LR
+    User -->|POST /upload| API
+    API -->|store raw file| S3
+    API -->|enqueue job| SQS
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Kubernetes (Minikube)                              │
-│                                                     │
-│  ┌─────────┐    ┌──────────┐    ┌───────────────┐  │
-│  │   API   │    │  Worker  │───▶│  Prometheus   │  │
-│  │ FastAPI │    │ (×2 pods)│    │  + Grafana    │  │
-│  └────┬────┘    └────┬─────┘    └───────────────┘  │
-│       │              │                              │
-└───────┼──────────────┼──────────────────────────────┘
-        │              │
-   ┌────▼──────────────▼────┐
-   │     LocalStack         │
-   │   S3  │  SQS           │
-   └────────────────────────┘
+    SQS -->|poll| Worker
+    Worker -->|read file| S3
+    Worker -->|write summary.json| S3
+    Worker -.->|metrics| Prometheus
+    Prometheus --> Grafana
+
+    User -->|GET /jobs/id| API
+    API -->|read result| S3
+
+    subgraph K8s [Kubernetes]
+        API
+        Worker
+        Prometheus
+        Grafana
+    end
+
+    subgraph LocalStack
+        S3[(S3)]
+        SQS([SQS])
+    end
 ```
 
 ## S3 Layout
