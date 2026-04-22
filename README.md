@@ -115,11 +115,13 @@ localstack start
 ```bash
 make setup       # start Minikube + install ArgoCD
 make monitoring  # deploy Prometheus + Grafana (waits for CRDs)
-make deploy      # deploy the app via ArgoCD
 make infra       # provision S3 + SQS on LocalStack
+make deploy      # deploy the app via ArgoCD
 ```
 
-> `make infra` will create `terraform.tfvars` from the example on first run and ask you to add your LocalStack auth token.
+> `make monitoring` creates `.env` from `.env.example` on first run — set `GRAFANA_PASSWORD`, then re-run.
+
+> `make infra` creates `terraform/environments/dev/terraform.tfvars` on first run — add your LocalStack auth token from [app.localstack.cloud](https://app.localstack.cloud), then re-run.
 
 ### Test
 
@@ -131,7 +133,7 @@ make test        # health check + upload test log + fetch result
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| API | `http://$(minikube ip):30080` | — |
+| API | `http://$(minikube ip):$(kubectl get svc api -n app -o jsonpath='{.spec.ports[0].nodePort}')` | — |
 | Grafana | `http://$(minikube ip):30300` | admin / prom-operator |
 | ArgoCD | `kubectl port-forward svc/argocd-server -n argocd 8080:443` | password from `make setup` output |
 

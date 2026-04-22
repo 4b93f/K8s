@@ -1,5 +1,4 @@
-MINIKUBE_IP := $(shell minikube ip 2>/dev/null)
-API_URL      := http://$(MINIKUBE_IP):30080
+API_URL := http://localhost:8080
 TF_DIR       := terraform/environments/dev
 
 .PHONY: help setup monitoring deploy infra test clean reset
@@ -8,17 +7,17 @@ help:
 	@echo "Usage:"
 	@echo "  make setup       Start Minikube and install ArgoCD"
 	@echo "  make monitoring  Deploy Prometheus + Grafana (run before 'deploy')"
-	@echo "  make deploy      Deploy the app via ArgoCD"
 	@echo "  make infra       Provision LocalStack S3 + SQS with Terraform"
+	@echo "  make deploy      Deploy the app via ArgoCD"
 	@echo "  make test        Run a quick API smoke test"
 	@echo "  make clean       Delete Minikube cluster + stop LocalStack"
 	@echo "  make reset       clean + remove Terraform state"
 
 ## 1. Start Minikube and install ArgoCD
 setup:
-	minikube start
+	minikube start --driver=qemu2 --cpus=4 --memory=6144
 	kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+	kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 	@echo "Waiting for ArgoCD server..."
 	kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
 	@echo "ArgoCD ready."
@@ -26,7 +25,18 @@ setup:
 
 ## 2. Deploy monitoring (must run before 'deploy' — installs Prometheus CRDs)
 monitoring:
-	kubectl apply -f https://raw.githubusercontent.com/4b93f-organization/K8s-prod-config/main/argocd/monitor.yaml
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "Created .env from example — set GRAFANA_PASSWORD, then re-run 'make monitoring'"; \
+		exit 1; \
+	fi
+	@set -a; . ./.env; set +a; \
+	kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -; \
+	kubectl create secret generic grafana-admin \
+		--from-literal=admin-user=admin \
+		--from-literal=admin-password=$$GRAFANA_PASSWORD \
+		-n monitoring --dry-run=client -o yaml | kubectl apply -f -
+	curl -sL https://raw.githubusercontent.com/4b93f-organization/K8s-prod-config/main/argocd/monitor.yaml | kubectl apply -f -
 	@echo "Waiting for Prometheus operator CRDs..."
 	@until kubectl get crd prometheuses.monitoring.coreos.com >/dev/null 2>&1; do \
 		echo "  CRDs not ready yet, retrying in 10s..."; sleep 10; \
@@ -35,7 +45,7 @@ monitoring:
 
 ## 3. Deploy the app
 deploy:
-	kubectl apply -f https://raw.githubusercontent.com/4b93f-organization/K8s-prod-config/main/argocd/application.yaml
+	curl -sL https://raw.githubusercontent.com/4b93f-organization/K8s-prod-config/main/argocd/application.yaml | kubectl apply -f -
 	@echo "App syncing via ArgoCD. Watch: kubectl get pods -n app --watch"
 
 ## 4. Provision LocalStack resources
@@ -46,17 +56,22 @@ infra:
 		exit 1; \
 	fi
 	cd $(TF_DIR) && terraform init -input=false
-	cd $(TF_DIR) && terraform apply -auto-approve
+	cd $(TF_DIR) && terraform apply -auto-approve -refresh=true
 
 ## 5. Smoke test
 test:
-	@echo "Testing API at $(API_URL)..."
-	@curl -sf $(API_URL)/health | python3 -m json.tool
-	@echo "Uploading test log..."
-	$(eval JOB := $(shell curl -sf -X POST $(API_URL)/upload -F "file=@log/test.log" | python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])"))
-	@echo "Job ID: $(JOB)"
-	@sleep 3
-	@curl -sf $(API_URL)/jobs/$(JOB) | python3 -m json.tool
+	@kill $$(cat /tmp/pf.pid 2>/dev/null) 2>/dev/null; true; \
+	kubectl port-forward svc/api 8080:8000 -n app &>/tmp/pf.log & echo $$! > /tmp/pf.pid; \
+	sleep 5; \
+	echo "Health check:"; \
+	curl -sf http://localhost:8080/health | python3 -m json.tool; \
+	echo "Uploading test log..."; \
+	JOB=$$(curl -sf -X POST http://localhost:8080/upload -F "file=@log/test.log" | python3 -c "import sys,json; print(json.load(sys.stdin)['job_id'])"); \
+	echo "Job ID: $$JOB"; \
+	sleep 3; \
+	echo "Result:"; \
+	curl -sf http://localhost:8080/jobs/$$JOB | python3 -m json.tool; \
+	kill $$(cat /tmp/pf.pid) 2>/dev/null; true
 
 ## Teardown
 clean:
